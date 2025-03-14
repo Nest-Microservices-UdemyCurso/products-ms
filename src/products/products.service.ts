@@ -1,9 +1,4 @@
-import {
-  HttpStatus,
-  Injectable,
-  Logger,
-  OnModuleInit,
-} from '@nestjs/common';
+import { HttpStatus, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { CreateProductDto, UpdateProductDto } from './dto';
 import { PrismaClient } from '@prisma/client';
 import { PaginationDto } from 'src/common/dto';
@@ -26,7 +21,7 @@ export class ProductsService extends PrismaClient implements OnModuleInit {
     return createProduct;
   }
 
-  async findAll( paginationDto: PaginationDto ) {
+  async findAll(paginationDto: PaginationDto) {
     const { page, limit } = paginationDto;
     const totalPages = await this.product.count({ where: { available: true } });
     const lastPage = Math.ceil(totalPages / limit);
@@ -48,25 +43,24 @@ export class ProductsService extends PrismaClient implements OnModuleInit {
   async findOne(id: number) {
     const productfinded = await this.product.findUnique({
       where: { id, available: true },
-    })
+    });
 
     if (!productfinded) {
       throw new RpcException({
         message: `Product with id #${id} not found`,
         status: HttpStatus.NOT_FOUND,
-      })
+      });
     }
 
     return productfinded;
   }
 
-  async update( id: number, updateProductDto: UpdateProductDto ) {
-    const { id: __, ...data } = updateProductDto;  
+  async update(id: number, updateProductDto: UpdateProductDto) {
     await this.findOne(id);
 
-    const productUpdated = this.product.update({
-      where: { id },
-      data: data,
+    const productUpdated = await this.product.update({
+      where: { id: updateProductDto.id },
+      data: updateProductDto,
     });
 
     return productUpdated;
@@ -78,8 +72,29 @@ export class ProductsService extends PrismaClient implements OnModuleInit {
     await this.product.update({
       where: { id },
       data: { available: false },
-    })
+    });
 
     return `Product with id #${id} deleted`;
+  }
+
+  async validateProducts(ids: number[]) {
+    ids = Array.from(new Set(ids));
+
+    const products = await this.product.findMany({
+      where: {
+        id: {
+          in: ids,
+        },
+      },
+    });
+
+    if (products.length !== ids.length) {
+      throw new RpcException({
+        message: `Product with id #${ids} not found`,
+        status: HttpStatus.NOT_FOUND,
+      });
+    }
+
+    return products;
   }
 }
