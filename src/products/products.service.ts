@@ -21,23 +21,47 @@ export class ProductsService extends PrismaClient implements OnModuleInit {
     return createProduct;
   }
 
-  async findAll(paginationDto: PaginationDto) {
-    const { page, limit } = paginationDto;
-    const totalPages = await this.product.count({ where: { available: true } });
-    const lastPage = Math.ceil(totalPages / limit);
+  // async findAll(paginationDto: PaginationDto) {
+  //   const { page, limit } = paginationDto;
+  //   const totalPages = await this.product.count({ where: { available: true } });
+  //   const lastPage = Math.ceil(totalPages / limit);
 
-    return {
-      data: await this.product.findMany({
-        skip: (page - 1) * limit,
-        take: limit,
+  //   return {
+  //     data: await this.product.findMany({
+  //       skip: (page - 1) * limit,
+  //       take: limit,
+  //       where: { available: true },
+  //     }),
+  //     meta: {
+  //       total: totalPages,
+  //       lastPage: lastPage,
+  //       page: page,
+  //     },
+  //   };
+  // }
+  async findAll(paginationDto: PaginationDto) {
+    try {
+      const { page, limit } = paginationDto;
+      const totalPages = await this.product.count({
         where: { available: true },
-      }),
-      meta: {
-        total: totalPages,
-        lastPage: lastPage,
-        page: page,
-      },
-    };
+      });
+      const lastPage = Math.ceil(totalPages / limit);
+
+      return {
+        data: await this.product.findMany({
+          skip: (page - 1) * limit,
+          take: limit,
+          where: { available: true },
+        }),
+        meta: {
+          total: totalPages,
+          lastPage: lastPage,
+          page: page,
+        },
+      };
+    } catch (error) {
+      throw new RpcException(error);
+    }
   }
 
   async findOne(id: number) {
